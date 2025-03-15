@@ -239,11 +239,5 @@ source "drivers/nfc/pn553-i2c/Kconfig"
 source "drivers/nfc/p73-spi/Kconfig"
 #endif /*OPLUS_NFC_BRINGUP*/
 
-menu "KernelSU"
-
-config KSU
-        bool "Ship KernelSU with kernel"
-
-endmenu
-
+source "drivers/kernelsu/Kconfig"
 endmenu
