@@ -133,10 +133,6 @@ struct sensor_vector {
     struct sensor_hw hw[SOURCE_NUM];
 };
 
-struct sensor_vector_old {
-    int sensor_id;
-    struct sensor_hw hw[SOURCE_NUM - 1];
-};
 
 struct sensor_algorithm {
     int sensor_id;
@@ -147,12 +143,6 @@ struct sensor_algorithm {
 struct sensor_info {
     int magic_num;
     struct sensor_vector s_vector[SENSORS_NUM];
-    struct sensor_algorithm a_vector[SENSOR_ALGO_NUM];
-};
-
-struct sensor_info_old {
-    int magic_num;
-    struct sensor_vector_old s_vector[SENSORS_NUM];
     struct sensor_algorithm a_vector[SENSOR_ALGO_NUM];
 };
 
