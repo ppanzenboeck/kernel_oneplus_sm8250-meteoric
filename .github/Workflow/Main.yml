@@ -1,0 +1,40 @@
+name: Build Kernel - Meteoric KSU (mARkClang-17)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout kernel source
+        uses: actions/checkout@v4
+        with:
+          repository: xSiCxSmurf/kernel_oneplus_sm8250-meteoric
+          ref: derp16-kebab-ksu-n-susfs
+          submodules: recursive
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y \
+            bc build-essential curl flex bison libssl-dev libncurses-dev \
+            python3 unzip wget zip zstd
+
+      - name: Fetch mARkClang-17 toolchain
+        run: |
+          git clone --depth=1 https://github.com/mARk-android/mARkClang-17.git $HOME/mARkClang-17
+
+      - name: Build Kernel with mARkClang-17
+        run: |
+          export PATH="$HOME/mARkClang-17/bin:$PATH"
+          chmod +x $GITHUB_WORKSPACE/build.sh
+          $GITHUB_WORKSPACE/build.sh
+
+      - name: Upload Kernel ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: Meteoric-KSU-kebab
+          path: "*.zip"
+          
