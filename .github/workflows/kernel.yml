@@ -1,0 +1,48 @@
+name: Build Kernel - Meteoric KSU
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout kernel source
+        uses: actions/checkout@v4
+        with:
+          repository: xSiCxSmurf/kernel_oneplus_sm8250-meteoric
+          ref: derp16-kebab-ksu-n-susfs
+          submodules: recursive
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y \
+            bc bison build-essential curl flex gcc gcc-aarch64-linux-gnu \
+            gcc-arm-linux-gnueabi git libssl-dev libncurses-dev \
+            libelf-dev python3 unzip wget zip zstd
+
+      - name: Download Neutron Clang
+        run: |
+          mkdir -p $HOME/toolchains
+          cd $HOME/toolchains
+          wget -q https://github.com/Neutron-Clang/neutron-clang/releases/download/20240309/neutron-clang-20240309.tar.zst
+          tar --zstd -xf neutron-clang-20240309.tar.zst
+          mv neutron-clang-* neutron-clang
+
+      - name: Download AnyKernel3
+        run: |
+          git clone https://github.com/osm0sis/AnyKernel3.git $GITHUB_WORKSPACE/AnyKernel3
+
+      - name: Build Kernel
+        run: |
+          chmod +x $GITHUB_WORKSPACE/build.sh
+          $GITHUB_WORKSPACE/build.sh
+
+      - name: Upload Kernel ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: Meteoric-KSU-kebab
+          path: "*.zip"
+          
