@@ -1,4 +1,4 @@
-name: Build Kernel - Meteoric KSU
+name: Build Kernel - Meteoric KSU (mARkClang-17)
 
 on:
   workflow_dispatch:
@@ -19,24 +19,16 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y \
-            bc bison build-essential curl flex gcc gcc-aarch64-linux-gnu \
-            gcc-arm-linux-gnueabi git libssl-dev libncurses-dev \
-            libelf-dev python3 unzip wget zip zstd
+            bc build-essential curl flex bison libssl-dev libncurses-dev \
+            python3 unzip wget zip zstd
 
-      - name: Download Neutron Clang
+      - name: Fetch mARkClang-17 toolchain
         run: |
-          mkdir -p $HOME/toolchains
-          cd $HOME/toolchains
-          wget -q https://github.com/Neutron-Clang/neutron-clang/releases/download/20240309/neutron-clang-20240309.tar.zst
-          tar --zstd -xf neutron-clang-20240309.tar.zst
-          mv neutron-clang-* neutron-clang
+          git clone --depth=1 https://github.com/mARk-android/mARkClang-17.git $HOME/mARkClang-17
 
-      - name: Download AnyKernel3
+      - name: Build Kernel with mARkClang-17
         run: |
-          git clone https://github.com/osm0sis/AnyKernel3.git $GITHUB_WORKSPACE/AnyKernel3
-
-      - name: Build Kernel
-        run: |
+          export PATH="$HOME/mARkClang-17/bin:$PATH"
           chmod +x $GITHUB_WORKSPACE/build.sh
           $GITHUB_WORKSPACE/build.sh
 
