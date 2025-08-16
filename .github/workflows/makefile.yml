@@ -40,7 +40,7 @@ jobs:
         git clone --depth=1 https://github.com/mARk-android/mARkClang-17.git clang
         wget https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/main/clang-r547379.tar.gz
           mkdir -p clang
-          tar -xf clang.tar.gz -C clang
+          tar -xf clang-r547379.tar.gz -C clang
           echo "$HOME/toolchains/clang/bin" >> $GITHUB_PATH
           
         fi
