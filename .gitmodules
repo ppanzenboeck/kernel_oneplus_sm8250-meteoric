@@ -1,6 +1,6 @@
 [submodule "KernelSU-Next"]
 	path = KernelSU-Next
-	url = git@github.com:tiann/KernelSU-Next.git
+	url = git@github.com:KernelSU-Next/KernelSU-Next
 
 [submodule "KernelSU"]
         path = KernelSU
