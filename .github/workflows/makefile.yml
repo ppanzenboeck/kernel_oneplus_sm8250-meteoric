@@ -30,7 +30,7 @@ jobs:
     - name: Install build dependencies
       run: |
         sudo apt update
-        sudo apt install -y build-essential bc curl git flex bison libssl-dev libncurses5-dev ccache python3 python3-distutils zip
+        sudo apt install -y build-essential bc curl git flex bison libssl-dev libncurses5-dev ccache python3 python3.12-distutils zip
 
     - name: Setup toolchain
       run: |
