@@ -79,7 +79,7 @@ jobs:
         make -j$(nproc) O=out
 
     - name: Archive kernel build artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: kernel-build
         path: out/
