@@ -2,3 +2,8 @@
 	path = KernelSU-Next
 	url = git@github.com:tiann/KernelSU-Next.git
 
+[submodule "KernelSU"]
+        path = KernelSU
+        url = git@github.com:tiann/KernelSU.git
+
+
