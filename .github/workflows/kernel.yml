@@ -1,40 +1,64 @@
-name: Build Kernel - Meteoric KSU (mARkClang-17)
+name: Kernel Build - derp16-kebab-ksu-n-susfs
 
 on:
   workflow_dispatch:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
-      - name: Checkout kernel source
-        uses: actions/checkout@v4
-        with:
-          repository: xSiCxSmurf/kernel_oneplus_sm8250-meteoric
-          ref: derp16-kebab-ksu-n-susfs
-          submodules: recursive
+      - name: Set up SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
 
       - name: Install dependencies
         run: |
           sudo apt update
           sudo apt install -y \
-            bc build-essential curl flex bison libssl-dev libncurses-dev \
-            python3 unzip wget zip zstd
+            bc bison build-essential curl flex gcc clang \
+            git libssl-dev libncurses5-dev lld unzip \
+            python3 python3-pip tar zstd
 
-      - name: Fetch mARkClang-17 toolchain
+      - name: Clone kernel source
         run: |
-          git clone --depth=1 https://github.com/mARk-android/mARkClang-17.git $HOME/mARkClang-17
+          git clone --depth=1 --branch derp16-kebab-ksu-n-susfs \
+            git@github.com:xSiCxSmurf/kernel_oneplus_sm8250-meteoric.git kernel_src
 
-      - name: Build Kernel with mARkClang-17
+      - name: Add KernelSU
+        working-directory: kernel_src
         run: |
-          export PATH="$HOME/mARkClang-17/bin:$PATH"
-          chmod +x $GITHUB_WORKSPACE/build.sh
-          $GITHUB_WORKSPACE/build.sh
+          git submodule add git@github.com:tiann/KernelSU-Next.git KernelSU-Next
+          git submodule update --init --recursive
 
-      - name: Upload Kernel ZIP
+      - name: Download mARkClang-17 toolchain
+        run: |
+          mkdir -p ~/toolchains
+          cd ~/toolchains
+          wget -q https://github.com/mARk-android/mARkClang-17/releases/download/2024.09.01/mARkClang-17.0.0.tar.zst
+          tar --zstd -xf mARkClang-17.0.0.tar.zst
+          mv mARkClang-17.0.0 clang
+
+      - name: Build kernel
+        working-directory: kernel_src
+        run: |
+          export PATH=$HOME/toolchains/clang/bin:$PATH
+          export ARCH=arm64
+          export SUBARCH=arm64
+          export CC=clang
+          export CROSS_COMPILE=aarch64-linux-gnu-
+          export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
+          make O=out derp_kebab_defconfig
+          make -j$(nproc) O=out
+
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Meteoric-KSU-kebab
-          path: "*.zip"
-          
+          name: kernel-build
+          path: |
+            kernel_src/out/arch/arm64/boot/Image
+            kernel_src/out/arch/arm64/boot/dtbo.img
+            kernel_src/out/arch/arm64/boot/dtb.img
