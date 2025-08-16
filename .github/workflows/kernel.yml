@@ -12,21 +12,18 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-          # Add this before any build steps that require the kernel repo
-- name: Set up SSH for submodules
-  run: |
-    mkdir -p ~/.ssh
-    echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-    chmod 600 ~/.ssh/id_rsa
-    ssh-keyscan github.com >> ~/.ssh/known_hosts
+      - name: Set up SSH for submodules
+        run: |
+         mkdir -p ~/.ssh
+         echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+         chmod 600 ~/.ssh/id_rsa
+         ssh-keyscan github.com >> ~/.ssh/known_hosts
+         git config --global url."git@github.com:".insteadOf "https://github.com/"
 
-    # Ensure Git uses SSH instead of HTTPS for all GitHub URLs
-    git config --global url."git@github.com:".insteadOf "https://github.com/"
-
-- name: Fetch all submodules via SSH
-  run: |
-    git submodule sync --recursive
-    git submodule update --init --force --recursive
+      - name: Fetch all submodules via SSH
+        run: |
+         git submodule sync --recursive
+         git submodule update --init --force --recursive
     
 
       - name: Checkout code (with submodules)
