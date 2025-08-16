@@ -47,8 +47,8 @@ jobs:
 
     - name: Initialize submodules
       run: |
-     #   git submodule sync --recursive
-      #  git submodule update --init --recursive --depth=1
+       git submodule sync --recursive
+       git submodule update --init --recursive --depth=1
 
     - name: Integrate KernelSU if available
       run: |
