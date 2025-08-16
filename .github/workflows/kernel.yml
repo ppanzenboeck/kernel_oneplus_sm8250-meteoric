@@ -1,61 +1,39 @@
-name: Build OnePlus 8T Kernel (Meteoric)
+name: Build OnePlus 8T Kernel with KernelSU
 
 on:
+  push:
+    branches:
+      - derp16-kebab-ksu-n-susfs
   workflow_dispatch:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
+    env:
+      HOME: ${{ runner.home }}
+
     steps:
-      - name: Setup SSH agent
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+    - name: Checkout repository with submodules via SSH
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        ssh-key: ${{ secrets.SSH_PRIVATE_KEY }}
+        persist-credentials: false
 
-      - name: Set up SSH for submodules
-        run: |
-         mkdir -p ~/.ssh
-         echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-         chmod 600 ~/.ssh/id_rsa
-         ssh-keyscan github.com >> ~/.ssh/known_hosts
-         git config --global url."git@github.com:".insteadOf "https://github.com/"
+    - name: Set up environment variables
+      run: |
+        echo "PATH=$HOME/toolchains/clang/bin:$PATH" >> $GITHUB_ENV
+        echo "KERNEL_DIR=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+        echo "ARCH=arm64" >> $GITHUB_ENV
+        echo "SUBARCH=arm64" >> $GITHUB_ENV
+        echo "CROSS_COMPILE=aarch64-linux-gnu-" >> $GITHUB_ENV
+        echo "CROSS_COMPILE_ARM32=arm-linux-gnueabi-" >> $GITHUB_ENV
 
-      - name: Fetch all submodules via SSH
-        run: |
-         git submodule sync --recursive
-         git submodule update --init --force --recursive
-    
+    - name: Install build dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y build-essential bc curl git flex bison libssl-dev libncurses5-dev ccache python3 python3-distutils zip
 
-      - name: Checkout code (with submodules)
-        uses: actions/checkout@v4
-        with:
-          # Make sure checkout uses the repository that contains .gitmodules
-          repository: xSiCxSmurf/kernel_oneplus_sm8250-meteoric
-          ref: derp16-kebab-ksu-n-susfs
-          submodules: recursive
-          
-      # Install dependencies
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            bc bison build-essential ccache curl flex g++-multilib gcc-multilib \
-            git libncurses5-dev libssl-dev python3 python3-pip unzip zip zstd
-
-      # Download mARkClang-17 toolchain
-      - name: Setup Clang toolchain
-        run: |
-          mkdir -p $HOME/toolchains
-          cd $HOME/toolchains
-          git clone --depth=1 https://github.com/mARk-android/mARkClang-17.git clang
-
-      # Export build environment
-      - name: Set environment
-        run: |
-          echo "PATH=$HOME/toolchains/clang/bin:$PATH" >> $GITHUB_ENV
-          echo "KERNEL_DIR=$GITHUB_WORKSPACE" >> $GITHUB_ENV
-          echo "ARCH=arm64" >> $GITHUB_ENV
-          echo "SUBARCH=arm64" >> $GITHUB_ENV
-          echo "CROSS_COMPILE=aarch64-linux-gnu-" >> $GITHUB_ENV
-          echo "CROSS_COMPILE_ARM32=arm-linux-gnueabi-" >> $GITHUB_ENV
-          
+    - name: Setup toolchain
+      run:
+      
