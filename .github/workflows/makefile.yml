@@ -1,1 +1,86 @@
+name: Build OnePlus 8T Kernel with KernelSU
 
+on:
+  push:
+    branches:
+      - derp16-kebab-ksu-n-susfs
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository with submodules via SSH
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        ssh-key: ${{ secrets.SSH_PRIVATE_KEY }}
+        persist-credentials: false
+
+    - name: Set up environment variables
+      run: |
+        echo "PATH=$HOME/toolchains/clang/bin:$PATH" >> $GITHUB_ENV
+        echo "KERNEL_DIR=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+        echo "ARCH=arm64" >> $GITHUB_ENV
+        echo "SUBARCH=arm64" >> $GITHUB_ENV
+        echo "CROSS_COMPILE=aarch64-linux-gnu-" >> $GITHUB_ENV
+        echo "CROSS_COMPILE_ARM32=arm-linux-gnueabi-" >> $GITHUB_ENV
+
+    - name: Install build dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y build-essential bc curl git flex bison libssl-dev libncurses5-dev ccache python3 python3-distutils zip
+
+    - name: Setup toolchain
+      run: |
+        mkdir -p $HOME/toolchains
+        cd $HOME/toolchains
+        if [ ! -d clang ]; then
+          git clone --depth=1 git@github.com:mARk-android/mARkClang-17.git clang
+        fi
+
+    - name: Start SSH agent for submodules
+      run: |
+        eval $(ssh-agent -s)
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" | tr -d '\r' | ssh-add -
+
+    - name: Initialize submodules
+      run: |
+        git submodule sync --recursive
+        git submodule update --init --recursive --depth=1
+
+    - name: Integrate KernelSU if available
+      run: |
+        cd $GITHUB_WORKSPACE
+        if [ -d KernelSU-Next ]; then
+          echo "Found KernelSU-Next, integrating..."
+          cp -r KernelSU-Next/* kernel/
+        elif [ -d KernelSU ]; then
+          echo "Found KernelSU, integrating..."
+          cp -r KernelSU/* kernel/
+        else
+          echo "No KernelSU directory found. Skipping integration."
+        fi
+
+        # Optionally apply any patches if present
+        if [ -d patches ]; then
+          for patch in patches/*.patch; do
+            git apply $patch || echo "Failed to apply patch $patch"
+          done
+        fi
+
+        echo "KernelSU integration step finished."
+
+    - name: Build Kernel
+      working-directory: ${{ github.workspace }}
+      run: |
+        make O=out vendor/meteoric_defconfig
+        make -j$(nproc) O=out
+
+    - name: Archive kernel build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: kernel-build
+        path: out/
+        
