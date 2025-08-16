@@ -16,7 +16,7 @@ jobs:
       with:
         submodules: recursive
         ssh-key: ${{ secrets.SSH_PRIVATE_KEY }}
-        persist-credentials: false
+        persist-credentials: true
 
     - name: Set up environment variables
       run: |
@@ -38,6 +38,11 @@ jobs:
         cd $HOME/toolchains
         if [ ! -d clang ]; then
         git clone --depth=1 https://github.com/mARk-android/mARkClang-17.git clang
+        wget https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/master/clang-r450784d.tar.gz -O clang.tar.gz
+          mkdir -p clang
+          tar -xf clang.tar.gz -C clang
+          echo "$HOME/toolchains/clang/bin" >> $GITHUB_PATH
+          
         fi
 
     - name: Start SSH agent for submodules
