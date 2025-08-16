@@ -37,7 +37,7 @@ jobs:
         mkdir -p $HOME/toolchains
         cd $HOME/toolchains
         if [ ! -d clang ]; then
-          git clone --depth=1 git@github.com:mARk-android/mARkClang-17.git clang
+        git clone --depth=1 https://github.com/mARk-android/mARkClang-17.git clang
         fi
 
     - name: Start SSH agent for submodules
