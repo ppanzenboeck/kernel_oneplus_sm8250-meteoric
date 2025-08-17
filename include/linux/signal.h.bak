@@ -174,11 +174,18 @@ _SIG_SET_OP(signotset, _sig_not)
 static inline void sigemptyset(sigset_t *set)
 {
 	switch (_NSIG_WORDS) {
+	case 4:
+		set->sig[3] = 0;
+		set->sig[2] = 0;
+		/* fall through */
+	case 2:
+		set->sig[1] = 0;
+		/* fall through */
+	case 1:
+		set->sig[0] = 0;
+		break;
 	default:
 		memset(set, 0, sizeof(sigset_t));
-		break;
-	case 2: set->sig[1] = 0;
-	case 1:	set->sig[0] = 0;
 		break;
 	}
 }
@@ -186,11 +193,18 @@ static inline void sigemptyset(sigset_t *set)
 static inline void sigfillset(sigset_t *set)
 {
 	switch (_NSIG_WORDS) {
+	case 4:
+		set->sig[3] = -1;
+		set->sig[2] = -1;
+		/* fall through */
+	case 2:
+		set->sig[1] = -1;
+		/* fall through */
+	case 1:
+		set->sig[0] = -1;
+		break;
 	default:
 		memset(set, -1, sizeof(sigset_t));
-		break;
-	case 2: set->sig[1] = -1;
-	case 1:	set->sig[0] = -1;
 		break;
 	}
 }
