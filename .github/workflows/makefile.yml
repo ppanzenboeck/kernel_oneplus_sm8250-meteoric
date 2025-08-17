@@ -34,7 +34,7 @@
           git wget tar make bc build-essential ccache \
           gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi \
           flex bison libssl-dev libncurses5-dev \
-          python3 unzip zip zstd rsync nproc
+          python3 unzip zip zstd rsync coreutils
 
     - name: Setup Clang toolchain (mARkClang-17, public repo)
       run: |
