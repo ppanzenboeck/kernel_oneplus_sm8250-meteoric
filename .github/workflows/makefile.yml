@@ -67,6 +67,13 @@ jobs:
         echo "=== CI patch script running ==="
         # Disable flask.h includes
         find security/selinux/include -type f -name "*.h" -exec sed -i 's/#include "flask.h"/\/\* disabled for CI \*\//' {} +
+        # Disable KGDB in defconfig
+        DEFCONF="arch/arm64/configs/vendor/meteoric_defconfig"
+        if [ -f "$DEFCONF" ]; then
+        sed -i -E 's/^CONFIG_KGDB[ =].*/# CONFIG_KGDB is not set/' "$DEFCONF" || true
+        sed -i -E 's/^CONFIG_KGDB_SERIAL_CONSOLE[ =].*/# CONFIG_KGDB_SERIAL_CONSOLE is not set/' "$DEFCONF" || true
+        fi
+
         # Disable KernelSU MODULE_IMPORT_NS
         sed -i 's/^.*MODULE_IMPORT_NS(.*);/\/\* MODULE_IMPORT_NS disabled in CI \*\//' kernel/ksu.c || true
         # Fix printk format
