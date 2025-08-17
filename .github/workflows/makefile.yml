@@ -1,15 +1,15 @@
-  name: CI Build - OnePlus 8T (derp16-kebab-ksu-n-susfs)
-  on:
-    push:
-       branches: [ derp16-kebab-ksu-n-susfs ]
-    workflow_dispatch:
+name: CI Build - OnePlus 8T (derp16-kebab-ksu-n-susfs)
+on:
+  push:
+    branches: [ derp16-kebab-ksu-n-susfs ]
+  workflow_dispatch:
 
-  permissions:
-    contents: read
-    id-token: write
+permissions:
+  contents: read
+  id-token: write
 
-  jobs:
-   build:
+jobs:
+  build:
     runs-on: ubuntu-latest
 
     steps:
@@ -17,26 +17,25 @@
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
-         # checkout this repo over SSH (requires SSH_PRIVATE_KEY secret)
         ssh-key: ${{ secrets.SSH_PRIVATE_KEY }}
         submodules: recursive
         persist-credentials: false
 
-    - name: Start SSH agent (ensure ssh key is available for any git ops)
+    - name: Start SSH agent
       uses: webfactory/ssh-agent@v0.9.0
       with:
         ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-    - name: Install build dependencies (including cross compilers)
+    - name: Install build dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y --no-install-recommends \
-          git wget tar make bc build-essential ccache \
+          git wget tar make bc build-essential ccache coreutils \
           gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi \
           flex bison libssl-dev libncurses5-dev \
-          python3 unzip zip zstd rsync coreutils
+          python3 unzip zip zstd rsync
 
-    - name: Setup Clang toolchain (mARkClang-17, public repo)
+    - name: Setup Clang toolchain (mARkClang-17)
       run: |
         mkdir -p $HOME/toolchains
         cd $HOME/toolchains
@@ -45,79 +44,63 @@
         fi
         echo "$HOME/toolchains/mARkClang-17/bin" >> $GITHUB_PATH
 
-    - name: Make CI patch script (disable SELinux includes + small fixes)
+    - name: Setup ccache
+      uses: actions/cache@v4
+      with:
+        path: ~/.ccache
+        key: ${{ runner.os }}-ccache-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-ccache-
+
+    - name: Configure ccache
+      run: |
+        export CCACHE_DIR=~/.ccache
+        ccache --max-size=2G
+        ccache -z
+        echo "export PATH=/usr/lib/ccache:\$PATH" >> $GITHUB_ENV
+
+    - name: Make CI patch script
       run: |
         cat > .github/ci_patch.sh <<'PATCH'
         #!/usr/bin/env bash
         set -euo pipefail
-        echo "=== CI patch: disabling SELinux includes & patching KernelSU warnings ==="
-
-        # 1) Comment out any #include "flask.h" lines to avoid missing header errors
-        if [ -d security/selinux/include ]; then
-          find security/selinux/include -type f -name "*.h" -print0 | \
-            xargs -0 -n1 sed -i 's/#include "flask.h"/\/\* #include \"flask.h\" (disabled in CI) \*\//g' || true
-        fi
-
-        # 2) Patch KernelSU line MODULE_IMPORT_NS (comment it out for CI)
-        if [ -f kernel/ksu.c ]; then
-          sed -i 's/^[[:space:]]*MODULE_IMPORT_NS(.*);/\/\* MODULE_IMPORT_NS disabled in CI to avoid build error \*\/;/' kernel/ksu.c || true
-        fi
-
-        # 3) Fix mm/damon printk format
-        if [ -f mm/damon/paddr.c ]; then
-          sed -i 's/printk(\("[^"]*] reclaimed %lld pages\\n",[[:space:]]*applied\);/printk("[damon_reclaim] reclaimed %lu pages\\n", (unsigned long) applied);/' mm/damon/paddr.c || true
-        fi
-
-        # 4) Fix misleading indentation in fs/crypto/policy.c by adding braces
-        if [ -f fs/crypto/policy.c ]; then
-          # Only modify the specific pattern (safe-ish): replace single-line if-return with braced block
-          perl -0777 -pe 's/if\s*\(\s*!strcmp\(boot,\s*SDHCI\)\s*&&\s*!strcmp\(file_system_type,\s*"f2fs"\)\s*\)\s*\n\s*return 0\s*;/if (!strcmp(boot, SDHCI) && !strcmp(file_system_type, "f2fs")) { \n                    return 0; \n                }/s' -i fs/crypto/policy.c || true
-        fi
-
-        # 5) As a safety: disable SECURITY_SELINUX in vendor defconfig (if present)
+        echo "=== CI patch script running ==="
+        # Disable flask.h includes
+        find security/selinux/include -type f -name "*.h" -exec sed -i 's/#include "flask.h"/\/\* disabled for CI \*\//' {} +
+        # Disable KernelSU MODULE_IMPORT_NS
+        sed -i 's/^.*MODULE_IMPORT_NS(.*);/\/\* MODULE_IMPORT_NS disabled in CI \*\//' kernel/ksu.c || true
+        # Fix printk format
+        sed -i 's/%lld/%lu/' mm/damon/paddr.c || true
+        # Disable SELinux in vendor defconfig
         DEFCONF="arch/arm64/configs/vendor/meteoric_defconfig"
         if [ -f "$DEFCONF" ]; then
-          sed -i 's/^CONFIG_SECURITY_SELINUX=y$/# CONFIG_SECURITY_SELINUX is not set/' "$DEFCONF" || true
-          sed -i 's/^CONFIG_SECURITY=y$/# CONFIG_SECURITY is not set/' "$DEFCONF" || true
+          sed -i 's/^CONFIG_SECURITY_SELINUX=y/# CONFIG_SECURITY_SELINUX is not set/' "$DEFCONF"
         fi
-
         echo "=== CI patch script finished ==="
         PATCH
         chmod +x .github/ci_patch.sh
 
     - name: Run CI patch script
-      run: |
-        ./.github/ci_patch.sh
-        # show summary of applied changes (for logs)
-        git --no-pager diff --no-prefix | sed -n '1,200p' || true
+      run: ./.github/ci_patch.sh
 
-    - name: Ensure submodules up-to-date (after any modifications)
+    - name: Ensure submodules updated
       run: |
-        git submodule sync --recursive || true
-        git submodule update --init --recursive --depth=1 || true
+        git submodule sync --recursive
+        git submodule update --init --recursive --depth=1
 
     - name: Prepare kernel defconfig
-      working-directory: ${{ github.workspace }}
       run: |
-        # ensure environment variables used by the build
-        export ARCH=arm64
-        export SUBARCH=arm64
+        export ARCH=arm64 SUBARCH=arm64
         export CROSS_COMPILE=aarch64-linux-gnu-
         export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
-        # create the O=out dir and generate the config
         make O=out vendor/meteoric_defconfig
 
-    - name: Build kernel (Clang)
-      working-directory: ${{ github.workspace }}
-      env:
-        PATH: ${{ env.PATH }}
+    - name: Build kernel (Clang + ccache)
       run: |
-        export ARCH=arm64
-        export SUBARCH=arm64
+        export ARCH=arm64 SUBARCH=arm64
         export CROSS_COMPILE=aarch64-linux-gnu-
         export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
-        export CC=clang
-        # relax a few -Werror checks that are noisy with external patches (temporary CI measure)
+        export CC="ccache clang"
         EXTRA_FLAGS="-Wno-error=format -Wno-error=misleading-indentation -Wno-error=implicit-int"
         make -j$(nproc) O=out \
           CC="${CC}" \
@@ -125,39 +108,29 @@
           KBUILD_CFLAGS="${EXTRA_FLAGS}" \
           XCFLAGS="${EXTRA_FLAGS}" \
           V=1
+        ccache -s
 
     - name: Package AnyKernel3
       run: |
-          git clone --depth=1 https://github.com/osm0sis/AnyKernel3
-          cp out/arch/arm64/boot/Image AnyKernel3/
-          cd AnyKernel3
-          zip -r9 ../KernelSU-Kernel.zip *
-       
-          - name: Upload Kernel Artifact  
-          uses: actions/upload-artifact@v4
-          with:
-          name: KernelSU-Kernel
-          path: KernelSU-Kernel.zip
+        git clone --depth=1 https://github.com/osm0sis/AnyKernel3
+        cp out/arch/arm64/boot/Image AnyKernel3/
+        cd AnyKernel3 && zip -r9 ../KernelSU-Kernel.zip *
 
-          - name: AnyKernel3 Package
-          run: |
-          git clone --depth=1 https://github.com/osm0sis/AnyKernel3
-          cp out/arch/arm64/boot/Image AnyKernel3/
-          cd AnyKernel3 && zip -r9 ../KernelSU-Kernel.zip *
+    - name: Build boot.img
+      run: |
+        wget -O stock-boot.img https://example.com/boot.img  # replace with real stock boot
+        git clone --depth=1 https://github.com/osm0sis/mkbootimg
+        ./mkbootimg/unpackbootimg stock-boot.img out_boot
+        cp out/arch/arm64/boot/Image out_boot/kernel
+        ./mkbootimg/mkbootimg --kernel out_boot/kernel --ramdisk out_boot/ramdisk.cpio.gz \
+          --base $(cat out_boot/base) --pagesize $(cat out_boot/pagesize) \
+          -o new-boot.img
 
-          - name: Build boot.img
-          run: |
-          wget -O stock-boot.img https://example.com/boot.img  # replace with your URL
-          git clone --depth=1 https://github.com/osm0sis/mkbootimg
-          ./mkbootimg/unpackbootimg stock-boot.img out_boot
-          cp out/arch/arm64/boot/Image out_boot/kernel
-          ./mkbootimg/mkbootimg --kernel out_boot/kernel --ramdisk out_boot/ramdisk.cpio.gz \
-            --base $(cat out_boot/base) --pagesize $(cat out_boot/pagesize) \
-            -o new-boot.img
-
-          - uses: actions/upload-artifact@v4
-          with:
-          name: Kernel-Build
-          path: |
-            KernelSU-Kernel.zip
-            new-boot.img
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: Kernel-Build
+        path: |
+          KernelSU-Kernel.zip
+          new-boot.img
+          
