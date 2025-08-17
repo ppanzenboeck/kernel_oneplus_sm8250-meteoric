@@ -127,15 +127,25 @@ jobs:
           XCFLAGS="${EXTRA_FLAGS}" \
           V=1
 
-    - name: Package AnyKernel3
-        run: |
+    - name: AnyKernel3 Package
+      run: |
           git clone --depth=1 https://github.com/osm0sis/AnyKernel3
           cp out/arch/arm64/boot/Image AnyKernel3/
-          cd AnyKernel3
-          zip -r9 ../KernelSU-Kernel.zip *
+          cd AnyKernel3 && zip -r9 ../KernelSU-Kernel.zip *
 
-      - name: Upload Kernel Artifact
-        uses: actions/upload-artifact@v4
+    - name: Build boot.img
+      run: |
+          wget -O stock-boot.img https://example.com/boot.img  # replace with your URL
+          git clone --depth=1 https://github.com/osm0sis/mkbootimg
+          ./mkbootimg/unpackbootimg stock-boot.img out_boot
+          cp out/arch/arm64/boot/Image out_boot/kernel
+          ./mkbootimg/mkbootimg --kernel out_boot/kernel --ramdisk out_boot/ramdisk.cpio.gz \
+            --base $(cat out_boot/base) --pagesize $(cat out_boot/pagesize) \
+            -o new-boot.img
+
+      - uses: actions/upload-artifact@v4
         with:
-          name: KernelSU-Kernel
-          path: KernelSU-Kernel.zip
+          name: Kernel-Build
+          path: |
+            KernelSU-Kernel.zip
+            new-boot.img
