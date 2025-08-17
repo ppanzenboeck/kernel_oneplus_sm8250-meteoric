@@ -9,8 +9,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      HOME: ${{ runner.home }}
+  
+    
 
     steps:
     - name: Checkout repository with submodules via SSH
