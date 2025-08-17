@@ -76,6 +76,12 @@ jobs:
         fi
 
         echo "KernelSU integration step finished."
+      
+        - name: Apply CI KernelSU & SELinux patches
+         run: |
+          chmod +x scripts/KSU&SElinux-patch.sh
+         ./scripts/KSU&SElinux-patch.sh
+
 
     - name: Build Kernel
       working-directory: ${{ github.workspace }}
