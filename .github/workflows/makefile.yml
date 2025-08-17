@@ -17,7 +17,8 @@ jobs:
     - name: Checkout repo (with SSH for submodules)
       uses: actions/checkout@v4
       with:
-        # checkout this repo over SSH (requires SSH_PRIVATE_KEY secret)
+        fetch-depth: 0
+         # checkout this repo over SSH (requires SSH_PRIVATE_KEY secret)
         ssh-key: ${{ secrets.SSH_PRIVATE_KEY }}
         submodules: recursive
         persist-credentials: false
@@ -126,9 +127,15 @@ jobs:
           XCFLAGS="${EXTRA_FLAGS}" \
           V=1
 
-    - name: Upload build output (out/)
-      uses: actions/upload-artifact@v4
-      with:
-        name: kernel-out
-        path: out/
-        
+    - name: Package AnyKernel3
+        run: |
+          git clone --depth=1 https://github.com/osm0sis/AnyKernel3
+          cp out/arch/arm64/boot/Image AnyKernel3/
+          cd AnyKernel3
+          zip -r9 ../KernelSU-Kernel.zip *
+
+      - name: Upload Kernel Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: KernelSU-Kernel
+          path: KernelSU-Kernel.zip
