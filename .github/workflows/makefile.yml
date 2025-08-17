@@ -1,16 +1,15 @@
-name: CI Build - OnePlus 8T (derp16-kebab-ksu-n-susfs)
+  name: CI Build - OnePlus 8T (derp16-kebab-ksu-n-susfs)
+  on:
+    push:
+       branches: [ derp16-kebab-ksu-n-susfs ]
+    workflow_dispatch:
 
-on:
-  push:
-    branches: [ derp16-kebab-ksu-n-susfs ]
-  workflow_dispatch:
+  permissions:
+    contents: read
+    id-token: write
 
-permissions:
-  contents: read
-  id-token: write
-
-jobs:
-  build:
+  jobs:
+   build:
     runs-on: ubuntu-latest
 
     steps:
@@ -127,14 +126,27 @@ jobs:
           XCFLAGS="${EXTRA_FLAGS}" \
           V=1
 
-    - name: AnyKernel3 Package
+    - name: Package AnyKernel3
       run: |
+          git clone --depth=1 https://github.com/osm0sis/AnyKernel3
+          cp out/arch/arm64/boot/Image AnyKernel3/
+          cd AnyKernel3
+          zip -r9 ../KernelSU-Kernel.zip *
+       
+          - name: Upload Kernel Artifact  
+          uses: actions/upload-artifact@v4
+          with:
+          name: KernelSU-Kernel
+          path: KernelSU-Kernel.zip
+
+          - name: AnyKernel3 Package
+          run: |
           git clone --depth=1 https://github.com/osm0sis/AnyKernel3
           cp out/arch/arm64/boot/Image AnyKernel3/
           cd AnyKernel3 && zip -r9 ../KernelSU-Kernel.zip *
 
-    - name: Build boot.img
-      run: |
+          - name: Build boot.img
+          run: |
           wget -O stock-boot.img https://example.com/boot.img  # replace with your URL
           git clone --depth=1 https://github.com/osm0sis/mkbootimg
           ./mkbootimg/unpackbootimg stock-boot.img out_boot
@@ -143,8 +155,8 @@ jobs:
             --base $(cat out_boot/base) --pagesize $(cat out_boot/pagesize) \
             -o new-boot.img
 
-      - uses: actions/upload-artifact@v4
-        with:
+          - uses: actions/upload-artifact@v4
+          with:
           name: Kernel-Build
           path: |
             KernelSU-Kernel.zip
