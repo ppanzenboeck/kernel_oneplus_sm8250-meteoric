@@ -1139,7 +1139,7 @@ static struct mount *clone_mnt(struct mount *old, struct dentry *root,
 	bool is_current_ksu_domain = susfs_is_current_ksu_domain();
 	bool is_current_zygote_domain = susfs_is_current_zygote_domain();
 
-	/* - It is very important that we need to use CL_COPY_MNT_NS to identify whether 
+	/* - It is very important that we need to use CL_COPY_MNT_NS to identify whether
 	 *   the clone is a copy_tree() or single mount like called by __do_loopback()
 	 * - if caller process is KSU, consider the following situation:
 	 *     1. it is NOT doing unshare => call alloc_vfsmnt() to assign a new sus mnt_id
@@ -1163,7 +1163,7 @@ static struct mount *clone_mnt(struct mount *old, struct dentry *root,
 	}
 	// Secondly, check if it is zygote process and no matter it is doing unshare or not
 	if (likely(is_current_zygote_domain) && (old->mnt_id >= DEFAULT_SUS_MNT_ID)) {
-		/* Important Note: 
+		/* Important Note:
 		 *  - Here we can't determine whether the unshare is called zygisk or not,
 		 *    so we can only patch out the unshare code in zygisk source code for now
 		 *  - But at least we can deal with old sus mounts using alloc_vfsmnt()
@@ -3103,7 +3103,7 @@ long do_mount(const char *dev_name, const char __user *dir_name,
 		retval = do_new_mount(&path, type_page, sb_flags, mnt_flags,
 				      dev_name, data_page);
 #ifdef CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT
-	// For both Legacy and Magic Mount KernelSU
+	// For both Legacy and Magic Mount KernelSU-Next
 	if (!retval && susfs_is_auto_add_sus_ksu_default_mount_enabled &&
 			(!(flags & (MS_REMOUNT | MS_BIND | MS_SHARED | MS_PRIVATE | MS_SLAVE | MS_UNBINDABLE)))) {
 		if (susfs_is_current_ksu_domain()) {
@@ -3261,7 +3261,7 @@ struct mnt_namespace *copy_mnt_ns(unsigned long flags, struct mnt_namespace *ns,
 	// q->mnt.susfs_mnt_id_backup -> original mnt_id
 	// q->mnt_id -> will be modified to the fake mnt_id
 
-	// Here We are only interested in processes of which original mnt namespace belongs to zygote 
+	// Here We are only interested in processes of which original mnt namespace belongs to zygote
 	// Also we just make use of existing 'q' mount pointer, no need to delcare extra mount pointer
 	if (is_zygote_pid) {
 		last_entry_mnt_id = list_first_entry(&new_ns->list, struct mount, mnt_list)->mnt_id;
