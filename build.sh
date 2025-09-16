@@ -109,8 +109,8 @@ function exports() {
     export SUBARCH=arm64
 
     # Export KBUILD HOST and USER
-    export KBUILD_BUILD_HOST=Neoteric
-    export KBUILD_BUILD_USER=HELLBOY017
+    export KBUILD_BUILD_HOST=${hostname}
+    export KBUILD_BUILD_USER=${whoami}
 
     # Export PROCS and DISTRO
     export PROCS=$(nproc --all)
