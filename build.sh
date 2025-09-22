@@ -81,7 +81,7 @@ function cloneTC() {
             if [ $COMPILER_CLEANUP = true ]; then
                 rm -rf ~/meteoric/proton-clang
             fi
-            if [ $(ls $HOME/meteoric/neutron-clang/bin 2>/dev/null | wc -l ) -ne 0 ] && 
+            if [ $(ls $HOME/meteoric/neutron-clang/bin 2>/dev/null | wc -l ) -ne 0 ] &&
                [ $(find $HOME/meteoric/neutron-clang -name *.tar.zst | wc -l) -eq 0 ]; then
                 PATH="$HOME/meteoric/neutron-clang/bin:$PATH"
             else
@@ -97,7 +97,7 @@ function cloneTC() {
             ;;
     esac
 }
-	
+
 ##------------------------------------------------------##
 # Export Variables
 function exports() {
@@ -109,8 +109,8 @@ function exports() {
     export SUBARCH=arm64
 
     # Export KBUILD HOST and USER
-    export KBUILD_BUILD_HOST=Neoteric
-    export KBUILD_BUILD_USER=HELLBOY017
+    export KBUILD_BUILD_HOST=${hostname}
+    export KBUILD_BUILD_USER=${whoami}
 
     # Export PROCS and DISTRO
     export PROCS=$(nproc --all)
@@ -130,15 +130,15 @@ function choices() {
     echo    "                BUILDING KERNEL                "
     echo -e "***********************************************$nocol"
 
-    # KernelSU
-    read -p "Include KernelSU? If unsure, say N. (Y/N) " KSU_RESP 
+    # KernelSU-Next
+    read -p "Include KernelSU-Next? If unsure, say N. (Y/N) " KSU_RESP
     case $KSU_RESP in
         [yY] )
-            if [ $(ls $KERNEL_DIR/KernelSU 2>/dev/null | wc -l) -eq 0 ]; then
-                rm -rf $KERNEL_DIR/KernelSU
-                git submodule update --init --recursive KernelSU
-            elif [ $(ls $KERNEL_DIR/KernelSU 2>/dev/null | wc -l) -ne 0 ]; then
-            	ZIPNAME=Meteoric-KernelSU
+            if [ $(ls $KERNEL_DIR/KernelSU-Next 2>/dev/null | wc -l) -eq 0 ]; then
+                rm -rf $KERNEL_DIR/KernelSU-Next
+                git submodule update --init --recursive KernelSU-Next
+            elif [ $(ls $KERNEL_DIR/KernelSU-Next 2>/dev/null | wc -l) -ne 0 ]; then
+            	ZIPNAME=Meteoric-KernelSU-Next
             	KSU_CONFIG=ksu.config
             	if [ $(grep -c "KSU" arch/arm64/configs/$DEFCONFIG) -eq 0 ]; then
                     sed -i "s/-Meteoric/-Meteoric-$VERSION-KSU/" arch/arm64/configs/$DEFCONFIG
@@ -153,13 +153,13 @@ function choices() {
     esac
 
     # Clean build
-    read -p "Do you want to do a clean build? If unsure, say N. (Y/N) " CLEAN_RESP 
+    read -p "Do you want to do a clean build? If unsure, say N. (Y/N) " CLEAN_RESP
     case $CLEAN_RESP in
         [yY] )
             make O=out clean && make O=out mrproper
             ;;
     esac
-    
+
     # Interrupt detected
     if [ $SIGINT_DETECT -eq 1 ]; then
         if [ $(grep -c "KSU" arch/arm64/configs/$DEFCONFIG) -ne 0 ]; then
@@ -175,7 +175,7 @@ function choices() {
 ##----------------------------------------------------------##
 # Compilation process
 function compile() {
-    # Make kernel	
+    # Make kernel
     make O=out CC=clang ARCH=arm64 $DEFCONFIG $KSU_CONFIG savedefconfig
     make -kj$(nproc --all) O=out \
     ARCH=arm64 \
@@ -191,15 +191,15 @@ function compile() {
     STRIP=llvm-strip \
     V=$VERBOSE 2>&1 | tee out/error.log
 
-    # KernelSU
-    if [ $ZIPNAME = Meteoric-KernelSU ]; then
+    # KernelSU-Next
+    if [ $ZIPNAME = Meteoric-KernelSU-Next ]; then
         sed -i 's/CONFIG_KSU=y/# CONFIG_KSU is not set/g' out/.config
         sed -i '/CONFIG_KSU=y/d' out/defconfig
         sed -i "s/-Meteoric-$VERSION-KSU/-Meteoric/" out/defconfig out/.config arch/arm64/configs/$DEFCONFIG
-        
-        if [ $(grep -c "# KernelSU" arch/arm64/configs/$DEFCONFIG) -eq 1 ]; then
+
+        if [ $(grep -c "# KernelSU-Next" arch/arm64/configs/$DEFCONFIG) -eq 1 ]; then
             sed -i 's/CONFIG_KSU=y/# CONFIG_KSU is not set/g' arch/arm64/configs/$DEFCONFIG
-        else   
+        else
             sed -i '/CONFIG_KSU=y/d' arch/arm64/configs/$DEFCONFIG
         fi
     else
@@ -207,7 +207,7 @@ function compile() {
     fi
 
     # Verify build
-    if [ $(grep -c "Error 2" out/error.log) -ne 0 ] || [ $SIGINT_DETECT -eq 1 ]; then 
+    if [ $(grep -c "Error 2" out/error.log) -ne 0 ] || [ $SIGINT_DETECT -eq 1 ]; then
         echo ""
         echo -e "$red***********************************************"
         echo    "           KERNEL COMPILATION FAILED           "
@@ -216,7 +216,7 @@ function compile() {
     else
         echo -e "$green***********************************************"
         echo    "          KERNEL COMPILATION FINISHED          "
-        echo -e "***********************************************$nocol"  
+        echo -e "***********************************************$nocol"
     fi
 }
 ##----------------------------------------------------------##
@@ -250,13 +250,13 @@ function zipping() {
         sha1sum out/$FINAL_ZIP
 
         # Github release
-        read -p "Do you want to do a github release? If unsure, say N. (Y/N) " GIT_RESP 
+        read -p "Do you want to do a github release? If unsure, say N. (Y/N) " GIT_RESP
         case $GIT_RESP in
             [yY] )
                 gh release create $VERSION out/$FINAL_ZIP --repo $RELEASE_REPO --title Meteoric-$VERSION
                 ;;
             *)
-                read -p "Do you want to upload files to the current github release? If unsure, say N. (Y/N) " UPLOAD_RESP 
+                read -p "Do you want to upload files to the current github release? If unsure, say N. (Y/N) " UPLOAD_RESP
                 case $UPLOAD_RESP in
                     [yY] )
                         gh release upload $VERSION out/$FINAL_ZIP --repo $RELEASE_REPO
