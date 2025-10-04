@@ -113,6 +113,7 @@ jobs:
           export CROSS_COMPILE=aarch64-linux-gnu-
           export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
           export CC=clang
+          export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH
           EXTRA_FLAGS="-Wno-error=format -Wno-error=misleading-indentation -Wno-error=implicit-int"
           make -j"${{ env.CPU_COUNT }}" O=out \
             CC="${CC}" \
