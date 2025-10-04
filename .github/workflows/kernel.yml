@@ -55,37 +55,37 @@ jobs:
       - name: Make CI patch script
         run: |
           cat > .github/ci_patch.sh <<'PATCH'
-          #!/usr/bin/env bash
-          set -euo pipefail
-          echo "=== CI patch: disabling SELinux includes & patching KernelSU warnings ==="
+#!/usr/bin/env bash
+set -euo pipefail
+echo "=== CI patch: disabling SELinux includes & patching KernelSU warnings ==="
 
-          # Disable SELinux includes
-          if [ -d security/selinux/include ]; then
-            find security/selinux/include -type f -name "*.h" -print0 | \
-              xargs -0 -n1 sed -i 's/#include "flask.h"/\/\* #include "flask.h" (disabled in CI) \*\//g' || true
-          fi
+# Disable SELinux includes
+if [ -d security/selinux/include ]; then
+  find security/selinux/include -type f -name "*.h" -print0 | \
+    xargs -0 -n1 sed -i 's/#include "flask.h"/\/\* #include "flask.h" (disabled in CI) \*\//g' || true
+fi
 
-          # Patch KernelSU warnings
-          if [ -f kernel/ksu.c ]; then
-            sed -i 's/^[[:space:]]*MODULE_IMPORT_NS(.*);/\/\* MODULE_IMPORT_NS disabled in CI \*\//;' kernel/ksu.c || true
-          fi
+# Patch KernelSU warnings
+if [ -f kernel/ksu.c ]; then
+  sed -i 's/^[[:space:]]*MODULE_IMPORT_NS(.*);/\/\* MODULE_IMPORT_NS disabled in CI \*\//;' kernel/ksu.c || true
+fi
 
-          # Optional small patches for warnings
-          if [ -f mm/damon/paddr.c ]; then
-            sed -i 's/printk(\("[^"]*] reclaimed %lld pages\\n",[[:space:]]*applied\);/printk("[damon_reclaim] reclaimed %lu pages\\n", (unsigned long) applied);/' mm/damon/paddr.c || true
-          fi
+# Optional small patches for warnings
+if [ -f mm/damon/paddr.c ]; then
+  sed -i 's/printk(\("[^"]*] reclaimed %lld pages\\n",[[:space:]]*applied\);/printk("[damon_reclaim] reclaimed %lu pages\\n", (unsigned long) applied);/' mm/damon/paddr.c || true
+fi
 
-          if [ -f fs/crypto/policy.c ]; then
-            perl -0777 -pe 's/if\s*\(\s*!strcmp\(boot,\s*SDHCI\)\s*&&\s*!strcmp\(file_system_type,\s*"f2fs"\)\s*\)\s*\n\s*return 0\s*;/if (!strcmp(boot, SDHCI) && !strcmp(file_system_type, "f2fs")) { \n                    return 0; \n                }/s' -i fs/crypto/policy.c || true
-          fi
+if [ -f fs/crypto/policy.c ]; then
+  perl -0777 -pe 's/if\s*\(\s*!strcmp\(boot,\s*SDHCI\)\s*&&\s*!strcmp\(file_system_type,\s*"f2fs"\)\s*\)\s*\n\s*return 0\s*;/if (!strcmp(boot, SDHCI) && !strcmp(file_system_type, "f2fs")) { \n                    return 0; \n                }/s' -i fs/crypto/policy.c || true
+fi
 
-          DEFCONF="arch/arm64/configs/vendor/meteoric_defconfig"
-          if [ -f "$DEFCONF" ]; then
-            sed -i 's/^CONFIG_SECURITY_SELINUX=y$/# CONFIG_SECURITY_SELINUX is not set/' "$DEFCONF" || true
-            sed -i 's/^CONFIG_SECURITY=y$/# CONFIG_SECURITY is not set/' "$DEFCONF" || true
-          fi
+DEFCONF="arch/arm64/configs/vendor/meteoric_defconfig"
+if [ -f "$DEFCONF" ]; then
+  sed -i 's/^CONFIG_SECURITY_SELINUX=y$/# CONFIG_SECURITY_SELINUX is not set/' "$DEFCONF" || true
+  sed -i 's/^CONFIG_SECURITY=y$/# CONFIG_SECURITY is not set/' "$DEFCONF" || true
+fi
 
-          echo "=== CI patch script finished ==="
+echo "=== CI patch script finished ==="
 PATCH
           chmod +x .github/ci_patch.sh
 
@@ -103,7 +103,7 @@ PATCH
           echo "Checking all DTS/DTI files..."
           find arch/arm64/boot/dts/vendor/ -type f \( -name '*.dts' -o -name '*.dtsi' \) | while read f; do
             echo "Checking $f..."
-            ./scripts/dtc/dtc -I dts -O dtb -o /tmp/test.dtbo "$f"
+            dtc -I dts -O dtb -o /tmp/$(basename "$f").dtbo "$f"
           done
           echo "All DTS/DTI files compiled successfully."
 
