@@ -32,7 +32,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             build-essential make coreutils bc bison flex libssl-dev libncurses-dev libelf-dev \
-            gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi clang lld ccache git wget python3 python3-distutils
+            gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi clang lld ccache git wget python3 
 
           echo "make: $(which make || echo 'MISSING')"
           echo "nproc: $(which nproc || echo 'MISSING')"
