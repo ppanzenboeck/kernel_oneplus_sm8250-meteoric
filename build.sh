@@ -33,6 +33,17 @@ function download_toolchain() {
   fi
   }
 
+function make_ak3_zip(){
+  #i don't really use this but ig a lot of people do and its nice for distribution.
+  BASE_OUT=$(pwd)/out/arch/arm64/boot 
+  ZIP_NAME="AK3-$(date +%Y%m%d)-pearl.zip"
+  cp $BASE_OUT/Image $BASE_OUT/dtbo.img $BASE_OUT/dtb $(pwd)/anykernel
+  cd anykernel 
+  zip -r9 $ZIP_NAME * -x README $ZIP_NAME
+  rm Image dtbo.img dtb
+  mv $ZIP_NAME ..
+}
+
 download_toolchain
 
 export KBUILD_BUILD_HOST=$(uname -a | awk '{print $2}')
@@ -65,3 +76,7 @@ BUILD_SETTINGS="LLVM=1
 make O=out ARCH=arm64 PATH="$COREUTILS_DIR/bin:$GZIP_DIR/bin:$C_PATH/bin:$PATH" $BUILD_SETTINGS vendor/meteoric_defconfig
 make O=out -j$(nproc --all) PATH="$COREUTILS_DIR/bin:$GZIP_DIR/bin:$C_PATH/bin:$PATH" $BUILD_SETTINGS
 
+#check if anykernel exists and make a zip if it does
+if [ -d "anykernel" ]; then
+  make_ak3_zip
+fi
