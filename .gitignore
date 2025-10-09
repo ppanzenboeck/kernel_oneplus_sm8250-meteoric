@@ -44,7 +44,7 @@
 *.xz
 Module.symvers
 modules.builtin
-
+*.rej
 #
 # Top-level generic files
 #
@@ -143,3 +143,4 @@ Android.bp
 
 # Ignore out directory
 out/
+aospclang/
