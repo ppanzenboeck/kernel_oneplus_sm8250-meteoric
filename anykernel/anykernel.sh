@@ -4,7 +4,7 @@
 ### AnyKernel setup
 # begin properties
 properties() { '
-kernel.string=Meteoric kernel by HELLBOY017, P.A.N.Z, KernalSU-Next + SuSFS patches by Paradox
+kernel.string=Meteoric kernel by HELLBOY017, P.A.N.Z, oct888, KernalSU-Next + SuSFS 1.5.5 patches by Paradox
 do.devicecheck=0
 do.modules=0
 do.systemless=0

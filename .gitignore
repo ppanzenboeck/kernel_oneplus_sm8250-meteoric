@@ -45,6 +45,7 @@
 Module.symvers
 modules.builtin
 *.rej
+*.zip
 #
 # Top-level generic files
 #
