@@ -51,9 +51,9 @@ jobs:
           clang --version
 
       - name: Make CI patch script
-  run: |
-    # Create the CI patch script
-    cat > .github/ci_patch.sh <<'PATCH'
+        run: |
+         # Create the CI patch script
+          cat > .github/ci_patch.sh <<'PATCH'
 #!/usr/bin/env bash
 set -euo pipefail
 
