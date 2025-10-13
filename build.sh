@@ -35,8 +35,15 @@ function download_toolchain() {
 
 function make_ak3_zip(){
   #i don't really use this but ig a lot of people do and its nice for distribution.
-  BASE_OUT=$(pwd)/out/arch/arm64/boot 
-  ZIP_NAME="AK3-$(date +%Y%m%d)-pearl.zip"
+  BASE_OUT=$(pwd)/out/arch/arm64/boot
+  #modify ak3 zip name to include device codename. we can check the current branch and check if it includes "kebab". if it does then we know it for 8t. otherwise 8/pro.
+  #i don't know why but apparently sm8250 diverges now but whatever.
+  if [[ $(git rev-parse --abbrev-ref HEAD) == *"kebab"* ]]; then
+    DEVICE="kebab"
+  else
+    DEVICE="noodle"
+  fi
+  ZIP_NAME="AK3-pearl-$DEVICE-$(date +%Y%m%d-%H%M).zip"
   cp $BASE_OUT/Image $BASE_OUT/dtbo.img $BASE_OUT/dtb $(pwd)/anykernel
   cd anykernel 
   zip -r9 $ZIP_NAME * -x README $ZIP_NAME
