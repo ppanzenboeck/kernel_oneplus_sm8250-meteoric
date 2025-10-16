@@ -51,14 +51,11 @@ jobs:
           echo "$HOME/toolchains/mARkClang-17/bin" >> $GITHUB_PATH
           clang --version
 
-      - name: Make CI patch script
-        shell: bash
+      - name: Make CI patch script (disable SELinux includes + small fixes)
         run: |
-          cat > .github/ci_patch.sh <<'PATCH'
-#!/usr/bin/env bash
-set -euo pipefail
-
-echo "=== CI patch: disabling SELinux includes & patching KernelSU warnings ==="
+         cat > .github/ci_patch.sh <<'PATCH'
+        #!/usr/bin/env bash
+set -euo pipefail echo "=== CI patch: disabling SELinux includes & patching KernelSU warnings ==="
 
 # Disable SELinux headers in CI
 if [ -d security/selinux/include ]; then
