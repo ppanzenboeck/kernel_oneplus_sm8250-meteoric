@@ -52,7 +52,7 @@ jobs:
 
       - name: Make CI patch script
         run: |
-         # Create the CI patch script
+          # Create the CI patch script
           cat > .github/ci_patch.sh <<'PATCH'
 #!/usr/bin/env bash
 set -euo pipefail
@@ -72,12 +72,12 @@ fi
 
 # Patch DAMON printk warning
 if [ -f mm/damon/paddr.c ]; then
-  sed -i 's/printk(\("[^"]*] reclaimed %lld pages\\n",[[:space:]]*applied\);/printk("[damon_reclaim] reclaimed %lu pages\\n", (unsigned long) applied);/' mm/damon/paddr.c || true
+  sed -i 's/printk("[^"]*] reclaimed %lld pages\\n",[[:space:]]*applied;/printk("[damon_reclaim] reclaimed %lu pages\\n", (unsigned long) applied);/' mm/damon/paddr.c || true
 fi
 
 # Patch fs/crypto/policy.c for f2fs boot check
 if [ -f fs/crypto/policy.c ]; then
-  perl -0777 -pe 's/if\s*\(\s*!strcmp\(boot,\s*SDHCI\)\s*&&\s*!strcmp\(file_system_type,\s*"f2fs"\)\s*\)\s*\n\s*return 0\s*;/if (!strcmp(boot, SDHCI) && !strcmp(file_system_type, "f2fs")) { \n                    return 0; \n                }/s' -i fs/crypto/policy.c || true
+  perl -0777 -pe 's/if\s*\s*!strcmp\(boot,\s*SDHCI\s*&&\s*!strcmpfile_system_type,\s*"f2fs"\s*\)\s*\n\s*return 0\s*;/if (!strcmp(boot, SDHCI) && !strcmp(file_system_type, "f2fs")) { \n                    return 0; \n                }/s' -i fs/crypto/policy.c || true
 fi
 
 # Disable SELinux in kernel defconfig
@@ -90,9 +90,8 @@ fi
 echo "=== CI patch script finished ==="
 PATCH
 
-    # Make the script executable
-    chmod +x .github/ci_patch.sh
-    
+      - name: Make the patch script executable
+        run: chmod +x .github/ci_patch.sh
 
       - name: Run CI patch script
         run: |
@@ -116,30 +115,3 @@ PATCH
         env:
           PATH: ${{ env.PATH }}
         run: |
-          export ARCH=arm64
-          export SUBARCH=arm64
-          export CROSS_COMPILE=aarch64-linux-gnu-
-          export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
-          export CC=clang
-          export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH
-          EXTRA_FLAGS="-Wno-error=format -Wno-error=misleading-indentation -Wno-error=implicit-int"
-          make -j"${{ env.CPU_COUNT }}" O=out \
-            CC="${CC}" \
-            CLANG_TRIPLE=aarch64-linux-gnu- \
-            KBUILD_CFLAGS="${EXTRA_FLAGS}" \
-            XCFLAGS="${EXTRA_FLAGS}" \
-            V=1
-
-      - name: Package AnyKernel3
-        run: r sass|
-          git clone --depth=1 https://github.com/osm0sis/AnyKernel3
-          cp out/arch/arm64/boot/Image AnyKernel3/
-          cd AnyKernel3
-          zip -r9 ../KernelSU-Kernel.zip *
-
-      - name: Upload Kernel Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: KernelSU-Kernel
-          path: KernelSU-Kernel.zip
-          
