@@ -38,9 +38,6 @@ jobs:
             build-essential make coreutils bc bison flex libssl-dev libncurses-dev libelf-dev \
             gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi clang lld ccache git wget python3 python3-setuptools device-tree-compiler
           
-          echo "make: $(which make || echo 'MISSING')"
-          echo "nproc: $(which nproc || echo 'MISSING')"
-          nproc || echo "nproc command not found (fallback will be used)"
           CPU_COUNT=$(nproc 2>/dev/null || grep -c ^processor /proc/cpuinfo || echo 1)
           echo "CPU_COUNT=$CPU_COUNT" >> $GITHUB_ENV
 
@@ -55,6 +52,7 @@ jobs:
           clang --version
 
       - name: Make CI patch script
+        shell: bash
         run: |
           cat > .github/ci_patch.sh <<'PATCH'
 #!/usr/bin/env bash
@@ -92,10 +90,12 @@ fi
 
 echo "=== CI patch script finished ==="
 PATCH
-          dos2unix .github/ci_patch.sh || true
+
           chmod +x .github/ci_patch.sh
+          dos2unix .github/ci_patch.sh || true
 
       - name: Run CI patch script
+        shell: bash
         run: |
           ./.github/ci_patch.sh
           git --no-pager diff --no-prefix | sed -n '1,200p' || true
