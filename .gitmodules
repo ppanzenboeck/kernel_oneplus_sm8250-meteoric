@@ -1,4 +1,4 @@
 [submodule "KernelSU-Next"]
 	path = KernelSU-Next
-	url = https://github.com/Paradox-AT/KernelSU-Next.git
+	url = https://github.com/oct888/KernelSU-Next.git
 	branch = kernel-v4.19
