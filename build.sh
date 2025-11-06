@@ -28,7 +28,7 @@ function download_toolchain() {
     ABS_EXTRACT_DIR=$(pwd)/$EXTRACT_DIR
     echo "job done!"
 
-  else 
+  else
     echo "Toolchain already exists. Skipping download."
   fi
   }
@@ -43,9 +43,9 @@ function make_ak3_zip(){
   else
     DEVICE="noodle"
   fi
-  ZIP_NAME="AK3-pearl-$DEVICE-$(date +%Y%m%d-%H%M).zip"
+  ZIP_NAME="AK3-Meteoric-$DEVICE-$(date +%Y%m%d-%H%M).zip"
   cp $BASE_OUT/Image $BASE_OUT/dtbo.img $BASE_OUT/dtb $(pwd)/anykernel
-  cd anykernel 
+  cd anykernel
   zip -r9 $ZIP_NAME * -x README $ZIP_NAME
   rm Image dtbo.img dtb
   mv $ZIP_NAME ..
@@ -61,23 +61,23 @@ export CROSS_COMPILE=aarch64-linux-gnu-
 export CROSS_COMPILE_COMPAT=arm-linux-gnueabi-
 export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
 
-BUILD_SETTINGS="LLVM=1 
-                LLVM_IAS=1 
+BUILD_SETTINGS="LLVM=1
+                LLVM_IAS=1
                 CC=clang
-                AR=llvm-ar 
-                NM=llvm-nm 
-                LD=ld.lld 
-                STRIP=llvm-strip 
-                OBJCOPY=llvm-objcopy 
-                OBJDUMP=llvm-objdump 
-                KCFLAGS=-O3 
-                OBJSIZE=llvm-size 
-                HOSTCC=clang 
-                HOSTCXX=clang++ 
-                HOSTAR=llvm-ar 
-                HOSTLD=ld.lld  
-                CROSS_COMPILE=aarch64-linux-gnu- 
-                CROSS_COMPILE_COMPAT=arm-linux-gnueabi- 
+                AR=llvm-ar
+                NM=llvm-nm
+                LD=ld.lld
+                STRIP=llvm-strip
+                OBJCOPY=llvm-objcopy
+                OBJDUMP=llvm-objdump
+                KCFLAGS=-O3
+                OBJSIZE=llvm-size
+                HOSTCC=clang
+                HOSTCXX=clang++
+                HOSTAR=llvm-ar
+                HOSTLD=ld.lld
+                CROSS_COMPILE=aarch64-linux-gnu-
+                CROSS_COMPILE_COMPAT=arm-linux-gnueabi-
                 CROSS_COMPILE_ARM32=arm-linux-gnueabi-"
 
 make O=out ARCH=arm64 PATH="$COREUTILS_DIR/bin:$GZIP_DIR/bin:$C_PATH/bin:$PATH" $BUILD_SETTINGS vendor/meteoric_defconfig

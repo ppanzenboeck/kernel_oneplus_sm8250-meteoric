@@ -21,9 +21,8 @@ the problems which may result by upgrading your kernel.
 ==========================
 anyways this is a super unprofessional project. i just made this for personal use and other people wanted to use it ig.
 
-credits: 
-    Paradox-AT: ksun + meteoric fork https://github.com/Paradox-AT
-    Ante0: linux 4.19 susfs 1.5.9 backport https://github.com/Ante0 
+credits:
+    oct888: susfs 1.5.9 merges https://github.com/oct888
+    Ante0: linux 4.19 susfs 1.5.9 backport https://github.com/Ante0
     hellboy17: meteoric kernel https://github.com/HELLBOY017
     P.A.N.Z: drepffest https://github.com/ppanzenboeck
-
