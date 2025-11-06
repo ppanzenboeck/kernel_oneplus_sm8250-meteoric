@@ -270,7 +270,7 @@ static inline const struct cred *get_cred(const struct cred *cred)
  * alteration of otherwise immutable credential sets.
  */
 static inline const struct cred *get_cred_rcu(const struct cred *cred)
- {
+{
 	 struct cred *nonconst_cred = (struct cred *) cred;
 	 if (!cred)
 		 return NULL;
@@ -278,7 +278,7 @@ static inline const struct cred *get_cred_rcu(const struct cred *cred)
 		 return NULL;
 	 validate_creds(cred);
 	 return cred;
- }
+}
 
 static inline void put_cred(const struct cred *_cred)
 {
