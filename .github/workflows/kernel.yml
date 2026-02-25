@@ -47,8 +47,9 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential libncurses-dev bison flex openssl libssl-dev \
-          curl perl libelf-dev zip clang lld llvm aarch64-linux-gnu-gcc
+          curl perl libelf-dev zip clang lld llvm gcc-aarch64-linux-gnu
 
+ 
       - name: Patch Source Code
         run: |
           echo "Applying fixes for known source errors..."
