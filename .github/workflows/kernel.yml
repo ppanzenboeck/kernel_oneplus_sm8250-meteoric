@@ -36,7 +36,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential libncurses-dev bison flex openssl libssl-dev curl perl zip
+          sudo apt-get install -y build-essential libncurses-dev bison flex openssl libssl-dev curl perl libelf-dev zip
       
       - name: Build Kernel
         env:
