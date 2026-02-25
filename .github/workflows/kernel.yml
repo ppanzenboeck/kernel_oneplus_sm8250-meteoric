@@ -43,6 +43,24 @@ jobs:
           # Update submodules, ignoring the broken commit pointer by fetching latest
           git submodule update --init --recursive --remote --depth 1
 
+      - name: Patch Source Code
+        run: |
+          echo "Applying fixes for Damon and Kexec..."
+
+          # 1. Fix missing task_struct headers in mm/damon/core.c
+          sed -i '1i #include <linux/sched.h>' mm/damon/core.c
+          sed -i '2i #include <linux/sched/task.h>' mm/damon/core.c
+
+          # 2. Fix conflicting types for cpu_soft_restart in arch/arm64/kernel/cpu-reset.h
+          # We change the inline definition to match the 2-argument declaration
+          sed -i 's/cpu_soft_restart(unsigned long entry,.*)/cpu_soft_restart(phys_addr_t entry, unsigned long arg1)/' arch/arm64/kernel/cpu-reset.h
+          
+          # 3. Fix the previously found typo 'free_areai'
+          sed -i 's/free_areai/free_area/g' mm/page_alloc.c
+
+          # 4. Remove the git lock if it exists
+          rm -f .git/shallow.lock
+          
       - name: Install dependencies
         run: |
           sudo apt-get update
