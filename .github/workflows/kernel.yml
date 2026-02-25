@@ -1,23 +1,52 @@
-#!/bin/bash
+name: Build Kernel
 
-# Set default values for environment variables
-KSU_ENABLED=${KSU_ENABLED:-N}
-CLEAN_BUILD=${CLEAN_BUILD:-N}
+on:
+  push:
+    branches:
+      - derp16-kebab-ksu-n-susfs
+  workflow_dispatch:
+    inputs:
+      ksu_enabled:
+        description: 'Enable KernelSU'
+        required: true
+        default: 'N'
+        type: choice
+        options:
+          - 'Y'
+          - 'N'
+      clean_build:
+        description: 'Perform clean build'
+        required: true
+        default: 'N'
+        type: choice
+        options:
+          - 'Y'
+          - 'N'
 
-# Process arguments
-if [[ "$KSU_ENABLED" == "Y" ]]; then
-    echo "KSU is enabled."
-else
-    echo "KSU is disabled."
-fi
-
-if [[ "$CLEAN_BUILD" == "Y" ]]; then
-    echo "Performing a clean build."
-else
-    echo "Performing a normal build."
-fi
-
-# Add necessary build commands below...
-# e.g. make build
-
-# Note: Interactive prompts have been removed to avoid hanging in GitHub Actions.
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libncurses-dev bison flex openssl libssl-dev curl perl zip
+      
+      - name: Build Kernel
+        env:
+          KSU_ENABLED: ${{ inputs.ksu_enabled || 'N' }}
+          CLEAN_BUILD: ${{ inputs.clean_build || 'N' }}
+        run: bash scripts/build-kernel.sh
+      
+      - name: Upload artifacts
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kernel-build
+          path: out/*.zip
