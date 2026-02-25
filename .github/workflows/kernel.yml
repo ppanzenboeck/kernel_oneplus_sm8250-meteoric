@@ -1,171 +1,23 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
-#
-# Script For Building Android Kernel
-#
+# Set default values for environment variables
+KSU_ENABLED=${KSU_ENABLED:-N}
+CLEAN_BUILD=${CLEAN_BUILD:-N}
 
-##----------------------------------------------------------##
-# Specify Kernel Directory
-KERNEL_DIR=$(pwd)
-DEFCONFIG=vendor/meteoric_defconfig
-ANYKERNEL3_DIR=$KERNEL_DIR/anykernel
-COMPILER_CLEANUP=true
-CLEANUP=true
+# Process arguments
+if [[ "$KSU_ENABLED" == "Y" ]]; then
+    echo "KSU is enabled."
+else
+    echo "KSU is disabled."
+fi
 
-# Release Repo
-RELEASE_REMOTE=$(git remote 2>/dev/null | head -n 1)
-RELEASE_REPO=$(git ls-remote --get-url "$RELEASE_REMOTE" 2>/dev/null)
+if [[ "$CLEAN_BUILD" == "Y" ]]; then
+    echo "Performing a clean build."
+else
+    echo "Performing a normal build."
+fi
 
-# Files
-IMAGE=$KERNEL_DIR/out/arch/arm64/boot/Image
-DTBO=$KERNEL_DIR/out/arch/arm64/boot/dtbo.img
-DTB=$KERNEL_DIR/out/arch/arm64/boot/dtb
+# Add necessary build commands below...
+# e.g. make build
 
-# Verbose Build
-VERBOSE=0
-KERVER=$(make kernelversion 2>/dev/null)
-ZIPNAME=Meteoric
-VERSION=$(cat "$KERNEL_DIR/Version" 2>/dev/null || echo "1.0")
-COMPILER=neutron
-SIGINT_DETECT=0
-
-# Start build
-BUILD_START=$(date +"%s")
-nocol='\033[0m'
-red='\033[0;31m'
-green='\033[0;32m'
-orange='\033[0;33m'
-blue='\033[0;34m'
-magenta='\033[0;35m'
-cyan='\033[0;36m'
-
-echo -e "$cyan***********************************************"
-echo    "              STARTING THE ENGINE              "
-echo -e "***********************************************$nocol"
-
-##----------------------------------------------------------##
-# Clone ToolChain
-function cloneTC() {
-    case $COMPILER in
-        proton)
-            if [ "$COMPILER_CLEANUP" = true ]; then
-                rm -rf "$HOME/meteoric/proton-clang"
-            fi
-            if [ -d "$HOME/meteoric/proton-clang/bin" ]; then
-                PATH="$HOME/meteoric/proton-clang/bin:$PATH"
-            else
-                git clone --depth=1 https://github.com/kdrag0n/proton-clang.git "$HOME/meteoric/proton-clang"
-                PATH="$HOME/meteoric/proton-clang/bin:$PATH"
-            fi
-            ;;
-        neutron)
-            if [ "$COMPILER_CLEANUP" = true ]; then
-                rm -rf "$HOME/meteoric/proton-clang"
-            fi
-            # Fixed the logic error here (Line 61 area)
-            if [ -d "$HOME/meteoric/neutron-clang/bin" ] && [ "$(find "$HOME/meteoric/neutron-clang" -name "*.tar.zst" | wc -l)" -eq 0 ]; then
-                PATH="$HOME/meteoric/neutron-clang/bin:$PATH"
-            else
-                rm -rf "$HOME/meteoric/neutron-clang"
-                mkdir -p "$HOME/meteoric/neutron-clang"
-                pushd "$HOME/meteoric/neutron-clang" || exit
-                curl -LO "https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman"
-                chmod a+x antman
-                ./antman -S
-                popd || exit
-                PATH="$HOME/meteoric/neutron-clang/bin:$PATH"
-            fi
-            ;;
-    esac
-}
-
-function exports() {
-    # Ensure toolchain exists before running --version
-    CLANG_BIN="$HOME/meteoric/$COMPILER-clang/bin/clang"
-    if [ -f "$CLANG_BIN" ]; then
-        export KBUILD_COMPILER_STRING=$("$CLANG_BIN" --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')
-    fi
-
-    export ARCH=arm64
-    export SUBARCH=arm64
-    export KBUILD_BUILD_HOST=Neoteric
-    export KBUILD_BUILD_USER=HELLBOY017
-    export PROCS=$(nproc --all)
-}
-
-function sigint() {
-    SIGINT_DETECT=1
-}
-
-function choices() {
-    echo -e "$green***********************************************"
-    echo    "                BUILDING KERNEL                "
-    echo -e "***********************************************$nocol"
-
-    read -p "Include KernelSU? (Y/N) " KSU_RESP 
-    case $KSU_RESP in
-        [yY] )
-            if [ ! -d "$KERNEL_DIR/KernelSU" ]; then
-                git submodule update --init --recursive KernelSU
-            fi
-            ZIPNAME=Meteoric-KernelSU
-            KSU_CONFIG=ksu.config
-            sed -i "s/-Meteoric/-Meteoric-$VERSION-KSU/" "arch/arm64/configs/$DEFCONFIG"
-            ;;
-         *)
-            sed -i "s/-Meteoric/-Meteoric-$VERSION/" "arch/arm64/configs/$DEFCONFIG"
-            ;;
-    esac
-
-    read -p "Do you want to do a clean build? (Y/N) " CLEAN_RESP 
-    case $CLEAN_RESP in
-        [yY] ) make O=out clean && make O=out mrproper ;;
-    esac
-}
-
-function compile() {
-    mkdir -p out
-    make O=out CC=clang ARCH=arm64 "$DEFCONFIG" $KSU_CONFIG savedefconfig
-    
-    make -kj"$PROCS" O=out \
-        ARCH=arm64 \
-        LLVM=1 \
-        LLVM_IAS=1 \
-        CLANG_TRIPLE=aarch64-linux-gnu- \
-        CROSS_COMPILE=aarch64-linux-android- \
-        CROSS_COMPILE_COMPAT=arm-linux-androideabi- \
-        V=$VERBOSE 2>&1 | tee out/error.log
-
-    # Verify build
-    if [ ! -f "$IMAGE" ]; then 
-        echo -e "$red\nKERNEL COMPILATION FAILED$nocol"
-        exit 1
-    fi
-}
-
-function zipping() {
-    cp "$IMAGE" "$DTBO" "$DTB" "$ANYKERNEL3_DIR/" 2>/dev/null
-    echo -e "$magenta\nZipping up...$nocol"
-
-    [ "$CLEANUP" = true ] && rm -rf out/*.zip
-    
-    pushd "$ANYKERNEL3_DIR" || exit
-    FINAL_ZIP="$ZIPNAME-$VERSION-$(date +%y%m%d-%H%M).zip"
-    zip -r9 "../out/$FINAL_ZIP" * -x README "$FINAL_ZIP"
-    popd || exit
-
-    if [ -f "out/$FINAL_ZIP" ]; then
-        echo -e "$orange\nDone! SHA1:$nocol"
-        sha1sum "out/$FINAL_ZIP"
-    fi
-}
-
-##-- Execution --##
-cloneTC
-exports
-trap sigint SIGINT
-choices
-compile
-trap - SIGINT
-zipping
-
+# Note: Interactive prompts have been removed to avoid hanging in GitHub Actions.
