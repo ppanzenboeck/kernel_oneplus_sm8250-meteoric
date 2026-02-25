@@ -1,31 +1,27 @@
 #!/bin/bash
 
-# Check if required environment variables are set
-if [ -z "$KSU_ENABLED" ]; then
-    echo "Error: KSU_ENABLED not set. Exiting..."
-    exit 1
-fi
+# Fetch and check environment variables
+KSU_ENABLED=${KSU_ENABLED:-false}
+CLEAN_BUILD=${CLEAN_BUILD:-true}
 
-if [ -z "$CLEAN_BUILD" ]; then
-    echo "Error: CLEAN_BUILD not set. Exiting..."
-    exit 1
-fi
+# Function to build the kernel
+build_kernel() {
+    echo "Starting kernel build..."
+    # Assuming generic kernel build steps here
+    if [ "$CLEAN_BUILD" == "true" ]; then
+        echo "Cleaning build environment..."
+        make clean
+    fi
+    echo "Building kernel with KSU_ENABLED=$KSU_ENABLED"
+    make all
+    echo "Kernel build completed!"
+}
 
-# Building kernel based on KSU_ENABLED and CLEAN_BUILD values
+# Check if KSU_ENABLED is set
 if [ "$KSU_ENABLED" == "true" ]; then
-    echo "KSU is enabled. Starting the kernel build with KSU..."
-    # Add commands to build kernel with KSU here
-else
-    echo "KSU is disabled. Proceeding with standard kernel build..."
+    echo "KSU is enabled. Additional build steps can be added here."
+    # Add any additional commands needed for KSU enabled builds
 fi
 
-if [ "$CLEAN_BUILD" == "true" ]; then
-    echo "Performing clean build..."
-    # Add commands for clean build here
-else
-    echo "Performing incremental build..."
-fi
-
-# Finalize build steps
-// Complete build steps here
-echo "Kernel build completed successfully!"
+# Execute the build function
+build_kernel
