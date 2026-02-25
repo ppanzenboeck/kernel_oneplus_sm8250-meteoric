@@ -31,19 +31,53 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          submodules: recursive
-      
+          # We set submodules to false initially to fix the SSH/Pointer issue manually
+          submodules: false
+          fetch-depth: 1
+
+      - name: Fix Submodules and Sync
+        run: |
+          # Convert SSH URLs to HTTPS for the CI runner
+          sed -i 's|git@github.com:|https://github.com/|g' .gitmodules
+          git submodule sync
+          # Update submodules, ignoring the broken commit pointer by fetching latest
+          git submodule update --init --recursive --remote --depth 1
+
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential libncurses-dev bison flex openssl libssl-dev curl perl libelf-dev zip
-      
+          sudo apt-get install -y build-essential libncurses-dev bison flex openssl libssl-dev \
+          curl perl libelf-dev zip clang lld llvm aarch64-linux-gnu-gcc
+
+      - name: Patch Source Code
+        run: |
+          echo "Applying fixes for known source errors..."
+          # 1. Fix the typo 'free_areai' -> 'free_area'
+          sed -i 's/free_areai/free_area/g' mm/page_alloc.c
+          
+          # 2. Fix the DAMON format string warning
+          sed -i 's/%lld pages/%ld pages/g' mm/damon/paddr.c
+          
+          # 3. Add missing header for vsyscall if it exists (prevents implicit declaration error)
+          if [ -f arch/x86/entry/vsyscall/vsyscall_64.c ]; then
+            sed -i '1i #include <linux/syscalls.h>' arch/x86/entry/vsyscall/vsyscall_64.c
+          fi
+
       - name: Build Kernel
         env:
-          KSU_ENABLED: ${{ inputs.ksu_enabled || 'N' }}
-          CLEAN_BUILD: ${{ inputs.clean_build || 'N' }}
-        run: bash scripts/build-kernel.sh
-      
+          KSU_ENABLED: ${{ github.event.inputs.ksu_enabled || 'N' }}
+          CLEAN_BUILD: ${{ github.event.inputs.clean_build || 'N' }}
+          # Force the build system to target the phone's CPU architecture
+          ARCH: arm64
+          SUBARCH: arm64
+          CROSS_COMPILE: aarch64-linux-gnu-
+        run: |
+          # Ensure git doesn't error on directory ownership
+          git config --global --add safe.directory $GITHUB_WORKSPACE
+          # Clean up any leftover lock files
+          rm -f .git/shallow.lock
+          bash scripts/build-kernel.sh
+
       - name: Upload artifacts
         if: success()
         uses: actions/upload-artifact@v4
