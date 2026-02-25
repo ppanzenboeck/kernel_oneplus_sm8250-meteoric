@@ -1,27 +1,22 @@
 #!/bin/bash
+# This script generates the .config from defconfig and builds the kernel.
 
-# Fetch and check environment variables
+# Set environment variables for KSU and CLEAN_BUILD
 KSU_ENABLED=${KSU_ENABLED:-false}
-CLEAN_BUILD=${CLEAN_BUILD:-true}
+CLEAN_BUILD=${CLEAN_BUILD:-false}
 
-# Function to build the kernel
-build_kernel() {
-    echo "Starting kernel build..."
-    # Assuming generic kernel build steps here
-    if [ "$CLEAN_BUILD" == "true" ]; then
-        echo "Cleaning build environment..."
-        make clean
-    fi
-    echo "Building kernel with KSU_ENABLED=$KSU_ENABLED"
-    make all
-    echo "Kernel build completed!"
-}
+# Generate .config from defconfig
+make defconfig
 
-# Check if KSU_ENABLED is set
-if [ "$KSU_ENABLED" == "true" ]; then
-    echo "KSU is enabled. Additional build steps can be added here."
-    # Add any additional commands needed for KSU enabled builds
+# Check if CLEAN_BUILD is set to true
+if [ "$CLEAN_BUILD" = true ]; then
+    make clean
 fi
 
-# Execute the build function
-build_kernel
+# Start kernel build without interactive prompts
+make -s -j$(nproc) all
+
+# Handle KSU if enabled
+if [ "$KSU_ENABLED" = true ]; then
+    echo "KSU is enabled!"
+fi
