@@ -85,7 +85,7 @@ if [ -f "$DEFCONF" ]; then
   sed -i 's/^CONFIG_SECURITY=y$/# CONFIG_SECURITY is not set/' "$DEFCONF" || true
 fi
 
-echo "=== CI patch script finished ==="
+echo "=== CI patch-script finished ==="
 PATCH
 
           chmod +x .github/ci_patch.sh
