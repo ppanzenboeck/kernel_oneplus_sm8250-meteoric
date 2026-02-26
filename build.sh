@@ -9,7 +9,7 @@
 KERNEL_DIR=$(pwd)
 
 # Kernel defconfig
-DEFCONFIG=vendor/meteoric_defconfig
+DEFCONFIG=vendor/kebab_defconfig
 
 # AnyKernel3 directory
 ANYKERNEL3_DIR=$KERNEL_DIR/anykernel
@@ -62,47 +62,11 @@ echo -e "$cyan***********************************************"
 echo    "              STARTING THE ENGINE              "
 echo -e "***********************************************$nocol"
 
-##----------------------------------------------------------##
-# Clone ToolChain
-function cloneTC() {
-    case $COMPILER in
-        proton)
-            if [ $COMPILER_CLEANUP = true ]; then
-                rm -rf ~/meteoric/neutron-clang
-            fi
-            if [ $(ls $HOME/meteoric/proton-clang 2>/dev/null | wc -l) -ne 0 ]; then
-                PATH="$HOME/meteoric/proton-clang/bin:$PATH"
-            else
-                git clone --depth=1  https://github.com/kdrag0n/proton-clang.git ~/meteoric/proton-clang
-                PATH="$HOME/meteoric/proton-clang/bin:$PATH"
-            fi
-            ;;
-        neutron)
-            if [ $COMPILER_CLEANUP = true ]; then
-                rm -rf ~/meteoric/proton-clang
-            fi
-            if [ $(ls $HOME/meteoric/neutron-clang/bin 2>/dev/null | wc -l ) -ne 0 ] && 
-               [ $(find $HOME/meteoric/neutron-clang -name *.tar.zst | wc -l) -eq 0 ]; then
-                PATH="$HOME/meteoric/neutron-clang/bin:$PATH"
-            else
-                rm -rf ~/meteoric/neutron-clang
-                mkdir -p ~/meteoric/neutron-clang
-                cd ~/meteoric/neutron-clang || exit
-                curl -LO "https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman"
-                chmod a+x antman
-                ./antman -S
-                cd - || exit
-                PATH="$HOME/meteoric/neutron-clang/bin:$PATH"
-            fi
-            ;;
-    esac
-}
-	
-##------------------------------------------------------##
+
 # Export Variables
 function exports() {
     # Export KBUILD_COMPILER_STRING
-    export KBUILD_COMPILER_STRING=$($HOME/meteoric/$COMPILER-clang/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')
+    export KBUILD_COMPILER_STRING=$($HOME/Derp16-k/build/toolchains/clang/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')
 
     # Export ARCH and SUBARCH
     export ARCH=arm64
@@ -177,7 +141,7 @@ function choices() {
 function compile() {
     # Make kernel	
     make O=out CC=clang ARCH=arm64 $DEFCONFIG $KSU_CONFIG savedefconfig
-    make -kj$(nproc --all) O=out \
+    make -j8$(nproc --all) O=out \
     ARCH=arm64 \
     LLVM=1 \
     LLVM_IAS=1 \
