@@ -33,10 +33,6 @@ config TOUCHPANEL_SYNAPTICS
 	help
 	  say Y to enable driver for Touchpanel using Synaptics_IC
 
-if TOUCHPANEL_SAMSUNG
-source "drivers/input/touchscreen/oplus_touchscreen/Samsung/Kconfig"
-endif
-
 if TOUCHPANEL_SYNAPTICS
 source "drivers/input/touchscreen/oplus_touchscreen/Synaptics/Kconfig"
 endif
