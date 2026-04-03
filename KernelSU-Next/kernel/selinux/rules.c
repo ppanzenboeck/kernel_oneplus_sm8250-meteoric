@@ -149,6 +149,10 @@ void apply_kernelsu_rules()
     ksu_allow(db, "vendor_hal_perf_default", "proc_sched", "file", "open");
     ksu_allow(db, "vendor_hal_perf_default", "proc_sched", "file", "getattr");
     
+    // Allow thermal-engine to bypass file permissions
+    ksu_allow(db, "vendor_thermal-engine", "vendor_thermal-engine", "capability", "dac_override");
+    ksu_allow(db, "vendor_thermal-engine", "vendor_thermal-engine", "capability", "dac_read_search");
+
 #ifdef CONFIG_KSU_SUSFS
     // Allow umount in zygote process without installing zygisk
     //ksu_allow(db, "zygote", "labeledfs", "filesystem", "unmount");
