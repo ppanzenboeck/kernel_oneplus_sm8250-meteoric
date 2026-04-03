@@ -134,7 +134,7 @@ void apply_kernelsu_rules()
     ksu_allow(db, "system_server", KERNEL_SU_DOMAIN, "process", "getpgid");
     ksu_allow(db, "system_server", KERNEL_SU_DOMAIN, "process", "sigkill");
 
-    // ----------- pm terminal fix ------------
+    // pm terminal fix
     ksu_allow(db, "system_server", "untrusted_app_all_devpts", "chr_file", "read");
     ksu_allow(db, "system_server", "untrusted_app_all_devpts", "chr_file", "write");
     ksu_allow(db, "system_server", "untrusted_app_all_devpts", "chr_file", "getattr");
@@ -142,7 +142,12 @@ void apply_kernelsu_rules()
     ksu_allow(db, "system_server", "kdevpts", "chr_file", "read");
     ksu_allow(db, "system_server", "kdevpts", "chr_file", "write");
     ksu_allow(db, "system_server", "kdevpts", "chr_file", "getattr");
-    // ----------------------------------------
+
+    // Allow perf-service access to scheduler params
+    ksu_allow(db, "vendor_hal_perf_default", "proc_sched", "file", "read");
+    ksu_allow(db, "vendor_hal_perf_default", "proc_sched", "file", "write");
+    ksu_allow(db, "vendor_hal_perf_default", "proc_sched", "file", "open");
+    ksu_allow(db, "vendor_hal_perf_default", "proc_sched", "file", "getattr");
     
 #ifdef CONFIG_KSU_SUSFS
     // Allow umount in zygote process without installing zygisk
