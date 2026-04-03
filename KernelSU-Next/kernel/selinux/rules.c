@@ -133,6 +133,16 @@ void apply_kernelsu_rules()
     // Allow system server kill su process
     ksu_allow(db, "system_server", KERNEL_SU_DOMAIN, "process", "getpgid");
     ksu_allow(db, "system_server", KERNEL_SU_DOMAIN, "process", "sigkill");
+
+    // ----------- pm terminal fix ------------
+    ksu_allow(db, "system_server", "untrusted_app_all_devpts", "chr_file", "read");
+    ksu_allow(db, "system_server", "untrusted_app_all_devpts", "chr_file", "write");
+    ksu_allow(db, "system_server", "untrusted_app_all_devpts", "chr_file", "getattr");
+    
+    ksu_allow(db, "system_server", "kdevpts", "chr_file", "read");
+    ksu_allow(db, "system_server", "kdevpts", "chr_file", "write");
+    ksu_allow(db, "system_server", "kdevpts", "chr_file", "getattr");
+    // ----------------------------------------
     
 #ifdef CONFIG_KSU_SUSFS
     // Allow umount in zygote process without installing zygisk
