@@ -95,6 +95,9 @@
 #include <linux/flex_array.h>
 #include <linux/posix-timers.h>
 #include <linux/cpufreq_times.h>
+#ifdef CONFIG_KSU_SUSFS_SUS_MAP
+#include <linux/susfs_def.h>
+#endif
 #include <trace/events/oom.h>
 #include "internal.h"
 #include "fd.h"
@@ -826,6 +829,10 @@ static ssize_t mem_rw(struct file *file, char __user *buf,
 	char *page;
 	unsigned int flags;
 
+	#ifdef CONFIG_KSU_SUSFS_SUS_MAP
+	struct vm_area_struct *vma;
+	#endif
+
 	if (!mm)
 		return 0;
 
@@ -842,6 +849,25 @@ static ssize_t mem_rw(struct file *file, char __user *buf,
 	while (count > 0) {
 		size_t this_len = min_t(size_t, count, PAGE_SIZE);
 
+		#ifdef CONFIG_KSU_SUSFS_SUS_MAP
+		vma = find_vma(mm, addr);
+		if (vma && vma->vm_file) {
+			struct inode *inode = file_inode(vma->vm_file);
+			if (inode->i_mapping &&
+				unlikely(test_bit(AS_FLAGS_SUS_MAP, &inode->i_mapping->flags) &&
+				susfs_is_current_proc_umounted_app()))
+			{
+				if (write) {
+					copied = -EFAULT;
+				} else {
+					copied = -EIO;
+				}
+				*ppos = addr;
+				mmput(mm);
+				goto free;
+			}
+		}
+		#endif
 		if (write && copy_from_user(page, buf, this_len)) {
 			copied = -EFAULT;
 			break;
@@ -2424,6 +2450,9 @@ proc_map_files_readdir(struct file *file, struct dir_context *ctx)
 	struct map_files_info *p;
 	int ret;
 
+	#ifdef CONFIG_KSU_SUSFS_SUS_MAP
+	struct inode *inode;
+	#endif
 	ret = -ENOENT;
 	task = get_proc_task(file_inode(file));
 	if (!task)
@@ -2460,7 +2489,16 @@ proc_map_files_readdir(struct file *file, struct dir_context *ctx)
 	 */
 
 	for (vma = mm->mmap, pos = 2; vma; vma = vma->vm_next) {
-		if (vma->vm_file && ++pos > ctx->pos)
+		if (!vma->vm_file)
+			continue;
+#ifdef CONFIG_KSU_SUSFS_SUS_MAP
+		inode = file_inode(vma->vm_file);
+		if (inode->i_mapping &&
+			unlikely(test_bit(AS_FLAGS_SUS_MAP, &inode->i_mapping->flags) &&
+			susfs_is_current_proc_umounted_app()))
+			continue;
+#endif
+		if (++pos > ctx->pos)
 			nr_files++;
 	}
 
@@ -2480,6 +2518,13 @@ proc_map_files_readdir(struct file *file, struct dir_context *ctx)
 				vma = vma->vm_next) {
 			if (!vma->vm_file)
 				continue;
+#ifdef CONFIG_KSU_SUSFS_SUS_MAP
+			inode = file_inode(vma->vm_file);
+			if (inode->i_mapping &&
+				unlikely(test_bit(AS_FLAGS_SUS_MAP, &inode->i_mapping->flags) &&
+				susfs_is_current_proc_umounted_app()))
+				continue;
+#endif
 			if (++pos <= ctx->pos)
 				continue;
 

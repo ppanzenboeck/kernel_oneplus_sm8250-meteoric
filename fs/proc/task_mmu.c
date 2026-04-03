@@ -27,6 +27,11 @@
 #include <asm/tlbflush.h>
 #include "internal.h"
 
+#ifdef CONFIG_KSU_SUSFS_SUS_PATH
+#include <linux/susfs_def.h>
+extern bool susfs_is_inode_sus_path(struct inode *inode);
+#endif
+
 #define SEQ_PUT_DEC(str, val) \
 		seq_put_decimal_ull_width(m, str, (val) << (PAGE_SHIFT-10), 8)
 void task_mem(struct seq_file *m, struct mm_struct *mm)
@@ -360,6 +365,11 @@ show_map_vma(struct seq_file *m, struct vm_area_struct *vma)
 	dev_t dev = 0;
 	const char *name = NULL;
 
+#ifdef CONFIG_KSU_SUSFS_SUS_PATH
+	if (file && susfs_is_inode_sus_path(file_inode(file)))
+		return;
+#endif
+
 	if (file) {
 		struct inode *inode = file_inode(vma->vm_file);
 		dev = inode->i_sb->s_dev;
@@ -458,9 +468,9 @@ const struct file_operations proc_pid_maps_operations = {
  * PSS_SHIFT) would be the real byte count.
  *
  * A shift of 12 before division means (assuming 4K page size):
- * 	- 1M 3-user-pages add up to 8KB errors;
- * 	- supports mapcount up to 2^24, or 16M;
- * 	- supports PSS up to 2^52 bytes, or 4PB.
+ * - 1M 3-user-pages add up to 8KB errors;
+ * - supports mapcount up to 2^24, or 16M;
+ * - supports PSS up to 2^52 bytes, or 4PB.
  */
 #define PSS_SHIFT 12
 
@@ -847,6 +857,11 @@ static int show_smap(struct seq_file *m, void *v)
 	struct vm_area_struct *vma = v;
 	struct mem_size_stats mss;
 
+#ifdef CONFIG_KSU_SUSFS_SUS_PATH
+	if (vma->vm_file && susfs_is_inode_sus_path(file_inode(vma->vm_file)))
+		return 0;
+#endif
+
 	memset(&mss, 0, sizeof(mss));
 
 	smap_gather_stats(vma, &mss);
@@ -904,6 +919,10 @@ static int show_smaps_rollup(struct seq_file *m, void *v)
 	hold_task_mempolicy(priv);
 
 	for (vma = priv->mm->mmap; vma; vma = vma->vm_next) {
+#ifdef CONFIG_KSU_SUSFS_SUS_PATH
+		if (vma->vm_file && susfs_is_inode_sus_path(file_inode(vma->vm_file)))
+			continue;
+#endif
 		smap_gather_stats(vma, &mss);
 		last_vma_end = vma->vm_end;
 	}
@@ -2183,6 +2202,11 @@ static int show_numa_map(struct seq_file *m, void *v)
 	struct mempolicy *pol;
 	char buffer[64];
 	int nid;
+
+#ifdef CONFIG_KSU_SUSFS_SUS_PATH
+	if (file && susfs_is_inode_sus_path(file_inode(file)))
+		return 0;
+#endif
 
 	if (!mm)
 		return 0;
