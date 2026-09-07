@@ -18,6 +18,10 @@
 #include "pnode.h"
 #include "internal.h"
 
+
+
+
+
 static __poll_t mounts_poll(struct file *file, poll_table *wait)
 {
 	struct seq_file *m = file->private_data;
@@ -101,6 +105,7 @@ static int show_vfsmnt(struct seq_file *m, struct vfsmount *mnt)
 	struct path mnt_path = { .dentry = mnt->mnt_root, .mnt = mnt };
 	struct super_block *sb = mnt_path.dentry->d_sb;
 	int err;
+
 
 	if (sb->s_op->show_devname) {
 		err = sb->s_op->show_devname(m, mnt_path.dentry);
@@ -202,6 +207,7 @@ static int show_vfsstat(struct seq_file *m, struct vfsmount *mnt)
 	struct super_block *sb = mnt_path.dentry->d_sb;
 	int err;
 
+
 	/* device */
 	if (sb->s_op->show_devname) {
 		seq_puts(m, "device ");
@@ -285,6 +291,7 @@ static int mounts_open_common(struct inode *inode, struct file *file,
 	p->show = show;
 	p->cached_event = ~0ULL;
 
+
 	return 0;
 
  err_put_path:
@@ -299,6 +306,8 @@ static int mounts_release(struct inode *inode, struct file *file)
 {
 	struct seq_file *m = file->private_data;
 	struct proc_mounts *p = m->private;
+
+
 	path_put(&p->root);
 	put_mnt_ns(p->ns);
 	return seq_release_private(inode, file);

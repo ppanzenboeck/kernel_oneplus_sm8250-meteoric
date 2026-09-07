@@ -32,6 +32,10 @@
 #include <linux/dnotify.h>
 #include <linux/compat.h>
 
+#ifdef CONFIG_KSU_SUSFS
+#include <linux/susfs.h>
+#endif
+
 #include "internal.h"
 #include <trace/hooks/syscall_check.h>
 
@@ -451,8 +455,17 @@ out:
 	return res;
 }
 
+#ifdef CONFIG_KSU_MANUAL_HOOK
+extern __attribute__((hot, always_inline))
+int ksu_handle_faccessat(int *dfd, const char __user **filename_user,
+			 int *mode, int *flags);
+#endif
+
 SYSCALL_DEFINE3(faccessat, int, dfd, const char __user *, filename, int, mode)
 {
+#ifdef CONFIG_KSU_MANUAL_HOOK
+	ksu_handle_faccessat(&dfd, &filename, &mode, NULL);
+#endif
 	return do_faccessat(dfd, filename, mode);
 }
 
@@ -466,6 +479,7 @@ int ksys_chdir(const char __user *filename)
 	struct path path;
 	int error;
 	unsigned int lookup_flags = LOOKUP_FOLLOW | LOOKUP_DIRECTORY;
+
 retry:
 	error = user_path_at(AT_FDCWD, filename, lookup_flags, &path);
 	if (error)
